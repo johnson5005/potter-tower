@@ -1,0 +1,685 @@
+---
+title: "PTAnalysis2019_RCode"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+## Load the needed packages
+library(drc)
+library(lmtest)
+library(sandwich)
+```
+
+```{r}
+#Load Data
+data <- read.csv("2019_Potter_Towersummary.csv")
+```
+
+```{r}
+#Model Work Flow For DRC Package Analysis
+
+  #idx <- which(data$Insecticide=="none" & data$Fungicide=="none" & data$Adjuvant == "none")
+  #length(idx)
+    ## 29 
+  #data.subset <- data[idx,]
+  #data.subset
+
+#drm function 
+  #Example.LL <- drm(Dead/Treated~Dose,data=data.subset, weights=Treated, 
+  #                  type='binomial', fct=LL.2())
+  #summary(Example.LL)
+
+  #pdf('None-None-DyneAmic.pdf')
+  #plot(Example.LL, main="None-None-None", xlab="Field Application Rate", ylab="% Mortality")
+  #dev.off()
+
+  #ED(Example.LL, c(10,20,50), interval='delta')
+
+  #noEffect(Example.LL)
+    #Chi-square test              Df         p-value 
+    #   -0.002977488     3.000000000     1.000000000 
+    #Null hypothesis is that there is no dose-response relationship 
+```
+
+
+```{r}
+#Individual
+idx.A <- which(data$Insecticide=="Altacor" & data$Fungicide=="none" & data$Adjuvant == "none")
+length(idx.A) #length= # cups treated so multiply by 20 to get # of bees
+## 66 
+data.subset.A <- data[idx.A,]
+
+idx.I <- which(data$Insecticide=="Intrepid" & data$Fungicide=="none" & data$Adjuvant == "none")
+length(idx.I)
+## 33 
+data.subset.I <- data[idx.I,]
+#data.subset
+idx.T <- which(data$Insecticide=="none" & data$Fungicide=="Tilt" & data$Adjuvant == "none")
+length(idx.T)
+## 62 
+data.subset.T <- data[idx.T,]
+#data.subset
+idx.P <- which(data$Insecticide=="none" & data$Fungicide=="Pristine" & data$Adjuvant == "none")
+length(idx.P)
+## 29 
+data.subset.P <- data[idx.P,]
+#data.subset
+idx.LS <- which(data$Insecticide=="none" & data$Fungicide=="LunaSensation" & data$Adjuvant == "none")
+length(idx.LS)
+## 15 
+data.subset.LS <- data[idx.LS,]
+#data.subset
+idx.V <- which(data$Insecticide=="none" & data$Fungicide=="Vangard" & data$Adjuvant == "none")
+length(idx.V)
+## 20
+data.subset.V <- data[idx.V,]
+#data.subset
+idx.DA <- which(data$Insecticide=="none" & data$Fungicide=="none" & data$Adjuvant == "Dyne-Amic")
+length(idx.DA)
+## 29
+data.subset.DA <- data[idx.DA,]
+#data.subset
+idx.MM <- which(data$Insecticide=="Mustang Maxx" & data$Fungicide=="none" & data$Adjuvant == "none")
+length(idx.MM)
+## 32
+data.subset.MM <- data[idx.MM,]
+data.subset.MM
+
+
+
+#Drms individual
+A.LL <- drm(Dead/Treated~Dose,data=data.subset.A[!data.subset.A$Dose<3,], weights=Treated, type='binomial', fct=LL.2())
+I.LL <- drm(Dead/Treated~Dose,data=data.subset.I, weights=Treated, 
+                  type='binomial', fct=LL.2())
+T.LL <- drm(Dead/Treated~Dose,data=data.subset.T, weights=Treated, 
+                  type='binomial', fct=LL.2())
+P.LL <- drm(Dead/Treated~Dose,data=data.subset.P, weights=Treated, 
+                  type='binomial', fct=LL.2())
+LS.LL <- drm(Dead/Treated~Dose,data=data.subset.LS, weights=Treated, 
+                  type='binomial', fct=LL.2())
+V.LL <- drm(Dead/Treated~Dose,data=data.subset.V, weights=Treated, 
+                  type='binomial', fct=LL.2())
+DA.LL <- drm(Dead/Treated~Dose,data=data.subset.DA, weights=Treated, 
+                  type='binomial', fct=LL.2())
+MM.LL <- drm(Dead/Treated~Dose,data=data.subset.MM, weights=Treated, 
+                  type='binomial', fct=LL.2())
+# Use pdf('None-None-None.pdf') and dev.off() when want to visualize data
+plot(A.LL, main="Altacor-None-None", xlab="Field Application Rate", ylab="% Mortality")
+plot(I.LL, main="Intrepid-None-None", xlab="Field Application Rate", ylab="% Mortality")
+plot(T.LL, main="None-Tilt-None", xlab="Field Application Rate", ylab="% Mortality")
+plot(P.LL, main="None-Pristine-None", xlab="Field Application Rate", ylab="% Mortality")
+plot(LS.LL, main="None-Luna Sensation-None", xlab="Field Application Rate", ylab="% Mortality")
+plot(V.LL, main="None-Vangard-None", xlab="Field Application Rate", ylab="% Mortality")
+plot(DA.LL, main="None-None-Dyne_Amic", xlab="Field Application Rate", ylab="% Mortality")
+plot(MM.LL, main="Mustang Maxx-None-None", xlab="Field Application Rate", ylab="% Mortality")
+
+#ED(A.LL, c(10,20,50), interval='delta')  
+# if hashtagged out then got NAs when ran, checked raw data and all showed no signficant response
+#ED(I.LL, c(10,20,50), interval='delta')
+#ED(T.LL, c(10,20,50), interval='delta')
+ED(P.LL, c(10,20,50), interval='delta')
+#ED(LS.LL, c(10,20,50), interval='delta')
+ED(V.LL, c(10,20,50), interval='delta')
+ED(DA.LL, c(10,20,50), interval='delta')
+ED(MM.LL, c(10,20,50), interval='delta')
+
+
+#Dose-response relationship
+noEffect(A.LL) #(p value=1.0000 relationship=n) 
+noEffect(I.LL) #(p value=1.0000 relationship=n)
+noEffect(T.LL) #(p value=1.0000 relationship=n)
+noEffect(P.LL) #(p value=1.0000 relationship=n)
+noEffect(LS.LL) #(p value=1.0000 relationship=n)
+noEffect(V.LL) #(p value=0.03760976 relationship=y) 
+noEffect(DA.LL) #(p value= 0.0000 relationship=y) 
+noEffect(MM.LL) #(p value=0.0000 relationship=y)
+
+```
+
+```{r}
+#Combinations
+
+#Altacor Combos
+idx.AT <- which(data$Insecticide=="Altacor" & data$Fungicide=="Tilt" & data$Adjuvant == "none")
+length(idx.AT)
+## 79
+data.subset.AT <- data[idx.AT,]
+#data.subset
+idx.AP <- which(data$Insecticide=="Altacor" & data$Fungicide=="Pristine" & data$Adjuvant == "none")
+length(idx.AP)
+## 38
+data.subset.AP <- data[idx.AP,]
+data.subset.AP
+data.subset.AP2<-data.subset.AP[!(data.subset.AP$Dose<0.1),]
+data.subset.AP2
+length(data.subset.AP2)
+
+idx.ALS <- which(data$Insecticide=="Altacor" & data$Fungicide=="LunaSensation" & data$Adjuvant == "none")
+length(idx.ALS)
+## 15 
+data.subset.ALS <- data[idx.ALS,]
+#data.subset
+idx.AV <- which(data$Insecticide=="Altacor" & data$Fungicide=="Vangard" & data$Adjuvant == "none")
+length(idx.AV)
+## 15 
+data.subset.AV <- data[idx.AV,]
+#data.subset
+
+#Intrepid Combos
+idx.IT <- which(data$Insecticide=="Intrepid" & data$Fungicide=="Tilt" & data$Adjuvant == "none")
+length(idx.IT)
+## 19 
+data.subset.IT <- data[idx.IT,]
+#data.subset
+idx.IP <- which(data$Insecticide=="Intrepid" & data$Fungicide=="Pristine" & data$Adjuvant == "none")
+length(idx.IP)
+## 17
+data.subset.IP <- data[idx.IP,]
+#data.subset.IP
+idx.ILS <- which(data$Insecticide=="Intrepid" & data$Fungicide=="LunaSensation" & data$Adjuvant == "none")
+length(idx.ILS)
+## 15 
+data.subset.ILS <- data[idx.ILS,]
+#data.subset
+idx.IV <- which(data$Insecticide=="Intrepid" & data$Fungicide=="Vangard" & data$Adjuvant == "none")
+length(idx.IV)
+## 15
+data.subset.IV <- data[idx.IV,]
+#data.subset
+
+
+
+#Drms combos
+AT.LL <- drm(Dead/Treated~Dose,data=data.subset.AT[!(data.subset.AT$Dose>0 & data.subset.AT$Dose<1),], weights=Treated, type='binomial', fct=LL.2())  #Had to adjust the treatments because the Chi squared value for this model was crazy high (after adjustment, much more reasonable)
+AP2.LL <- drm(Dead/Treated~Dose,data=data.subset.AP2, weights=Treated, 
+                  type='binomial', fct=LL.2())
+ALS.LL <- drm(Dead/Treated~Dose,data=data.subset.ALS, weights=Treated, 
+                  type='binomial', fct=LL.2())
+AV.LL <- drm(Dead/Treated~Dose,data=data.subset.AV, weights=Treated, 
+                  type='binomial', fct=LL.2())
+IT.LL <- drm(Dead/Treated~Dose,data=data.subset.IT, weights=Treated, 
+                  type='binomial', fct=LL.2())
+IP.LL <- drm(Dead/Treated~Dose,data=data.subset.IP, weights=Treated, 
+                  type='binomial', fct=LL.2())
+ILS.LL <- drm(Dead/Treated~Dose,data=data.subset.ILS, weights=Treated, 
+                  type='binomial', fct=LL.2())
+IV.LL <- drm(Dead/Treated~Dose,data=data.subset.IV, weights=Treated, 
+                  type='binomial', fct=LL.2())
+
+#pdf('None-None-None.pdf')
+#dev.off()
+plot(AT.LL, main="Altacor-Tilt-None", xlab="Field Application Rate", ylab="% Mortality")
+plot(AP2.LL, main="Altacor-Pristine-None", xlab="Field Application Rate", ylab="% Mortality")
+plot(ALS.LL, main="Altacor-LunaSensation-None", xlab="Field Application Rate", ylab="% Mortality")
+plot(AV.LL, main="Altacor-Vangard-None", xlab="Field Application Rate", ylab="% Mortality")
+plot(IT.LL, main="Intrepid-Tilt-None", xlab="Field Application Rate", ylab="% Mortality")
+plot(IP.LL, main="Interpid-Pristine-None", xlab="Field Application Rate", ylab="% Mortality")
+plot(ILS.LL, main="Intrepid-Luna Sensation-None", xlab="Field Application Rate", ylab="% Mortality")
+plot(IV.LL, main="Interpid-Vangard-None", xlab="Field Application Rate", ylab="% Mortality")
+
+ED(AT.LL, c(10,20,50), interval='delta')
+#e:1:50  9.70424    0.47573  8.77183 10.63665
+#ED(AP2.LL, c(10,20,50), interval='delta') 
+ED(ALS.LL, c(10,20,50), interval='delta')
+ED(AV.LL, c(10,20,50), interval='delta')
+ED(IT.LL, c(10,20,50), interval='delta')
+#e:1:50  1680.373   3120.525 -4435.745  7796.490
+ED(IP.LL, c(10,20,50), interval='delta')
+#ED(ILS.LL, c(10,20,50), interval='delta')  #NAs
+#ED(IV.LL, c(10,20,50), interval='delta')
+
+#Dose-response relationship
+noEffect(AT.LL) #(p value=0.000 relationship=y)
+noEffect(AP2.LL) #(p value=1.00000000 relationship=n) 
+noEffect(ALS.LL) #(p value=1.0000 relationship=n)
+noEffect(AV.LL) #(p value=1.0000 relationship=n)
+noEffect(IT.LL) #(p value=0.002723144 relationship=y)
+noEffect(IP.LL) #(p value=1.00000 relationship=n)
+noEffect(ILS.LL) #(p value=1.00000 relationship=n)
+noEffect(IV.LL) #(p value=1.00000 relationship=n)
+```
+
+```{r}
+#Individual + Dyne-Amic
+idx.ADA <- which(data$Insecticide=="Altacor" & data$Fungicide=="none" & data$Adjuvant == "Dyne-Amic")
+length(idx.ADA) #length= # cups treated so multiply by 20 to get # of bees
+## 20
+data.subset.ADA <- data[idx.ADA,]
+#data.subset
+idx.IDA <- which(data$Insecticide=="Intrepid" & data$Fungicide=="none" & data$Adjuvant == "Dyne-Amic")
+length(idx.IDA)
+## 10 
+data.subset.IDA <- data[idx.IDA,]
+#data.subset.IDA
+
+idx.TDA <- which(data$Insecticide=="none" & data$Fungicide=="Tilt" & data$Adjuvant == "Dyne-Amic")
+length(idx.TDA)
+data.subset.TDA <- data[idx.TDA,]
+## 17
+
+idx.PDA <- which(data$Insecticide=="none" & data$Fungicide=="Pristine" & data$Adjuvant == "Dyne-Amic")
+length(idx.PDA)
+## 14 
+data.subset.PDA <- data[idx.PDA,]
+#data.subset
+idx.LSDA <- which(data$Insecticide=="none" & data$Fungicide=="LunaSensation" & data$Adjuvant == "Dyne-Amic")
+length(idx.LSDA)
+## 14 
+data.subset.LSDA <- data[idx.LSDA,]
+#data.subset
+idx.VDA <- which(data$Insecticide=="none" & data$Fungicide=="Vangard" & data$Adjuvant == "Dyne-Amic")
+length(idx.VDA)
+## 25
+data.subset.VDA <- data[idx.VDA,]
+#data.subset
+
+#Drms individual +dyneamic
+ADA.LL <- drm(Dead/Treated~Dose,data=data.subset.ADA, weights=Treated, 
+                  type='binomial', fct=LL.2())
+IDA.LL <- drm(Dead/Treated~Dose,data=data.subset.IDA, weights=Treated, 
+                  type='binomial', fct=LL.2())
+TDA.LL <- drm(Dead/Treated~Dose,data=data.subset.TDA, weights=Treated, 
+                  type='binomial', fct=LL.2())
+PDA.LL <- drm(Dead/Treated~Dose,data=data.subset.PDA, weights=Treated, 
+                  type='binomial', fct=LL.2())
+LSDA.LL <- drm(Dead/Treated~Dose,data=data.subset.LSDA, weights=Treated, 
+                  type='binomial', fct=LL.2())
+VDA.LL <- drm(Dead/Treated~Dose,data=data.subset.VDA, weights=Treated, 
+                  type='binomial', fct=LL.2())
+
+
+#pdf('None-None-None.pdf')
+#dev.off()
+plot(ADA.LL, main="Altacor-None-DyneAmic", xlab="Field Application Rate", ylab="% Mortality")
+plot(IDA.LL, main="Intrepid-None-DyneAmic", xlab="Field Application Rate", ylab="% Mortality")
+plot(TDA.LL, main="None-Tilt-DyneAmic", xlab="Field Application Rate", ylab="% Mortality")
+plot(PDA.LL, main="None-Pristine-DyneAmic", xlab="Field Application Rate", ylab="% Mortality")
+plot(LSDA.LL, main="None-Luna Sensation-DyneAmic", xlab="Field Application Rate", ylab="% Mortality")
+plot(VDA.LL, main="None-Vangard-DyneAmic", xlab="Field Application Rate", ylab="% Mortality")
+
+
+ED(ADA.LL, c(10,20,50), interval='delta')  
+ED(IDA.LL, c(10,20,50), interval='delta')
+ED(TDA.LL, c(10,20,50), interval='delta')
+ED(PDA.LL, c(10,20,50), interval='delta')
+ED(LSDA.LL, c(10,20,50), interval='delta')
+ED(VDA.LL, c(10,20,50), interval='delta')
+
+#Dose-response relationship
+noEffect(ADA.LL) #(p value=1.0000 relationship=n)
+noEffect(IDA.LL) #(p value=0.3140079 relationship=n)
+noEffect(TDA.LL) #(p value=1.0000 relationship=n)
+noEffect(PDA.LL) #(p value=2.560548e-08 relationship=y)
+noEffect(LSDA.LL) #(p value=0.008799369 relationship=n)
+noEffect(VDA.LL) #(p value=1.601529e-09 relationship=y)
+```
+
+```{r}
+#Combinations + Dyne-Amic
+
+#Altacor Combos
+idx.ATDA <- which(data$Insecticide=="Altacor" & data$Fungicide=="Tilt" & data$Adjuvant == "Dyne-Amic")
+length(idx.ATDA)
+## 46
+data.subset.ATDA <- data[idx.ATDA,]
+#data.subset
+idx.APDA <- which(data$Insecticide=="Altacor" & data$Fungicide=="Pristine" & data$Adjuvant == "Dyne-Amic")
+length(idx.APDA)
+## 30
+data.subset.APDA <- data[idx.APDA,]
+#data.subset.APDA
+idx.ALSDA <- which(data$Insecticide=="Altacor" & data$Fungicide=="LunaSensation" & data$Adjuvant == "Dyne-Amic")
+length(idx.ALSDA)
+## 15 
+data.subset.ALSDA <- data[idx.ALSDA,]
+#data.subset
+idx.AVDA <- which(data$Insecticide=="Altacor" & data$Fungicide=="Vangard" & data$Adjuvant == "Dyne-Amic")
+length(idx.AVDA)
+## 25 
+data.subset.AVDA <- data[idx.AVDA,]
+#data.subset
+
+#Intrepid Combos
+idx.ITDA <- which(data$Insecticide=="Intrepid" & data$Fungicide=="Tilt" & data$Adjuvant == "Dyne-Amic")
+length(idx.ITDA)
+## 15 
+data.subset.ITDA <- data[idx.ITDA,]
+#data.subset
+idx.IPDA <- which(data$Insecticide=="Intrepid" & data$Fungicide=="Pristine" & data$Adjuvant == "Dyne-Amic")
+length(idx.IPDA)
+## 14
+data.subset.IPDA <- data[idx.IPDA,]
+#data.subset.IP
+idx.ILSDA <- which(data$Insecticide=="Intrepid" & data$Fungicide=="LunaSensation" & data$Adjuvant == "Dyne-Amic")
+length(idx.ILSDA)
+## 15 
+data.subset.ILSDA <- data[idx.ILSDA,]
+#data.subset
+idx.IVDA <- which(data$Insecticide=="Intrepid" & data$Fungicide=="Vangard" & data$Adjuvant == "Dyne-Amic")
+length(idx.IVDA)
+## 15
+data.subset.IVDA <- data[idx.IVDA,]
+#data.subset
+
+
+
+#Drms combination+dyne-amic
+ATDA.LL <- drm(Dead/Treated~Dose,data=data.subset.ATDA, weights=Treated, 
+                  type='binomial', fct=LL.2())
+APDA.LL <- drm(Dead/Treated~Dose,data=data.subset.APDA, weights=Treated, 
+                  type='binomial', fct=LL.2())
+ALSDA.LL <- drm(Dead/Treated~Dose,data=data.subset.ALSDA, weights=Treated, 
+                  type='binomial', fct=LL.2())
+AVDA.LL <- drm(Dead/Treated~Dose,data=data.subset.AVDA, weights=Treated, 
+                  type='binomial', fct=LL.2())
+ITDA.LL <- drm(Dead/Treated~Dose,data=data.subset.ITDA, weights=Treated, 
+                  type='binomial', fct=LL.2())
+IPDA.LL <- drm(Dead/Treated~Dose,data=data.subset.IPDA, weights=Treated, 
+                  type='binomial', fct=LL.2())
+ILSDA.LL <- drm(Dead/Treated~Dose,data=data.subset.ILSDA, weights=Treated, 
+                  type='binomial', fct=LL.2())
+IVDA.LL <- drm(Dead/Treated~Dose,data=data.subset.IVDA, weights=Treated, 
+                  type='binomial', fct=LL.2())
+
+#pdf('None-None-None.pdf')
+#dev.off()
+plot(ATDA.LL, main="Altacor-Tilt-DyneAmic", xlab="Field Application Rate", ylab="% Mortality")
+plot(APDA.LL, main="Altacor-Pristine-DyneAmic", xlab="Field Application Rate", ylab="% Mortality")
+plot(ALSDA.LL, main="Altacor-LunaSensation-DyneAmic", xlab="Field Application Rate", ylab="% Mortality")
+plot(AVDA.LL, main="Altacor-Vangard-DyneAmic", xlab="Field Application Rate", ylab="% Mortality")
+plot(ITDA.LL, main="Intrepid-Tilt-DyneAmic", xlab="Field Application Rate", ylab="% Mortality")
+plot(IPDA.LL, main="Interpid-Pristine-DyneAmic", xlab="Field Application Rate", ylab="% Mortality")
+plot(ILSDA.LL, main="Intrepid-Luna Sensation-DyneAmic", xlab="Field Application Rate", ylab="% Mortality")
+plot(IVDA.LL, main="Interpid-Vangard-DyneAmic", xlab="Field Application Rate", ylab="% Mortality")
+
+ED(ATDA.LL, c(10,20,50), interval='delta')
+ED(APDA.LL, c(10,20,50), interval='delta')
+ED(ALSDA.LL, c(10,20,50), interval='delta')
+ED(AVDA.LL, c(10,20,50), interval='delta')
+ED(ITDA.LL, c(10,20,50), interval='delta')
+ED(IPDA.LL, c(10,20,50), interval='delta')
+ED(ILS.LL, c(10,20,50), interval='delta')
+ED(IVDA.LL, c(10,20,50), interval='delta')
+
+
+#Dose-response relationship
+noEffect(ATDA.LL) #(p value=0.000 relationship=y)
+noEffect(APDA.LL) #(p value=0.0000 relationship=y) 
+noEffect(ALSDA.LL) #(p value=0.0000 relationship=y)
+noEffect(AVDA.LL) #(p value=1.00000 relationship=n)
+noEffect(ITDA.LL) #(p value=1.00000 relationship=n)
+noEffect(IPDA.LL) #(p value=1.000 relationship=n)
+noEffect(ILSDA.LL) #(p value=1.000 relationship=n)
+noEffect(IVDA.LL) #(p value=0.05047058 relationship=n)
+```
+
+
+```{r}
+#DRC Analysis Summary
+#Dose Response Relationships Summary
+
+#Individual 
+noEffect(MM.LL) #(p value=0.0000 relationship=y)
+noEffect(A.LL) #(p value=1.0000 relationship=n)
+noEffect(I.LL) #(p value=1.0000 relationship=n)
+noEffect(T.LL) #(p value=1.0000 relationship=n)
+noEffect(P.LL) #(p value=1.0000 relationship=n)
+noEffect(LS.LL) #(p value=1.0000 relationship=n)
+noEffect(V.LL) #(p value=0.03760976 relationship=y)
+noEffect(DA.LL) #(p value= 0.0000 relationship=y)
+
+
+#Combinations
+noEffect(AT.LL) #(p value=0.000 relationship=y)
+noEffect(AP2.LL) #(p value=1.00000000 relationship=n) 
+noEffect(ALS.LL) #(p value=1.0000 relationship=n)
+noEffect(AV.LL) #(p value=1.0000 relationship=n)
+noEffect(IT.LL) #(p value=0.01124026 relationship=y)
+noEffect(IP.LL) #(p value=1.00000 relationship=n)
+noEffect(ILS.LL) #(p value=1.00000 relationship=n)
+noEffect(IV.LL) #(p value=1.00000 relationship=n)
+
+#Individual + Dyne-Amic
+noEffect(ADA.LL) #(p value=1.0000 relationship=n)
+noEffect(IDA.LL) #(p value=0.3140079 relationship=n)
+noEffect(TDA.LL) #(p value=0.7758387 relationship=n)
+noEffect(PDA.LL) #(p value=6.397340e-07 relationship=y)
+noEffect(LSDA.LL) #(p value=0.1381428 relationship=n)
+noEffect(VDA.LL) #(p value=2.215235e-07 relationship=y)
+
+#Combinations  Dyne-Amic
+noEffect(ATDA.LL) #(p value=0.000 relationship=y)
+noEffect(APDA.LL) #(p value=0.0000 relationship=y) 
+noEffect(ALSDA.LL) #(p value=0.0000 relationship=y)
+noEffect(AVDA.LL) #(p value=1.00000 relationship=n)
+noEffect(ITDA.LL) #(p value=1.00000 relationship=n)
+noEffect(IPDA.LL) #(p value=1.000 relationship=n)
+noEffect(ILSDA.LL) #(p value=1.000 relationship=n)
+noEffect(IVDA.LL) #(p value=0.05047058 relationship=n)
+
+#Relationships
+noEffect(V.LL) #(p value=0.03760976 relationship=y)
+noEffect(DA.LL) #(p value= 0.0000 relationship=y)
+noEffect(MM.LL) #(p value=0.0000 relationship=y)
+noEffect(AT.LL) #(p value=0.000 relationship=y)
+noEffect(IT.LL) #(p value=0.01124026 relationship=y)
+noEffect(PDA.LL) #(p value=6.397340e-07 relationship=y)
+noEffect(LSDA.LL) #(p value=2.215235e-07 relationship=y)
+noEffect(VDA.LL) #(p value=2.215235e-07 relationship=y)
+noEffect(ATDA.LL) #(p value=0.000 relationship=y)
+noEffect(APDA.LL) #(p value=0.0000 relationship=y) 
+noEffect(ALSDA.LL) #(p value=0.0000 relationship=y)
+
+#Slope estimates for relationships
+summary(MM.LL)
+summary(V.LL)
+summary(DA.LL)
+summary(AT.LL)
+summary(IT.LL)
+summary(PDA.LL)
+summary(LSDA.LL)
+summary(VDA.LL)
+summary(ATDA.LL)
+summary(APDA.LL)
+summary(ALSDA.LL)
+
+#ED Values for relationhships
+ED(MM.LL, c(20,50), interval='delta') #(p value=0.0000 relationship=y)
+ED(V.LL , c(20,50), interval='delta') #(p value=0.03760976 relationship=y)
+ED(DA.LL , c(20,50), interval='delta') #(p value= 0.0000 relationship=y) 
+ED(AT.LL , c(20,50), interval='delta') #(p value=0.000 relationship=y)
+ED(IT.LL , c(20,50), interval='delta') #(p value=0.01124026 relationship=y)
+ED(PDA.LL , c(20,50), interval='delta') #(p value=6.397340e-07 relationship=Y)
+ED(LSDA.LL , c(20,50), interval='delta') #(p value=2.215235e-07 relationship=Y) 
+ED(VDA.LL , c(20,50), interval='delta') #(p value=2.215235e-07 relationship=Y)
+ED(ATDA.LL , c(20,50), interval='delta') #(p value=0.000 relationship=y)
+ED(APDA.LL , c(20,50), interval='delta') #(p value=0.0000 relationship=y) 
+ED(ALSDA.LL , c(20,50), interval='delta') #(p value=0.0000 relationship=y)
+```
+
+
+
+```{r}
+# DRC Analysis for CYP Inhibition Test
+
+#Load other Data (This data is now included in the attached csv file with all raw data, but for initial analysis it was analyzed in a separate file)
+data.18<-read.csv("2017-2019_PBO_Data_summary.csv")
+data.18
+
+# Determining info for AT vs APBO (2018 data)
+idx.APBO <- which(data.18$Insecticide=="Altacor" & data.18$Fungicide=="PBO" & data.18$Adjuvant == "none")
+data.subset.APBO <- data.18[idx.APBO,]
+APBO.glm <- glm((Dead / Treated) ~ log10(Dose),data = data.subset.APBO[!(data.subset.APBO$Dose<1),],weights = Treated, family = binomial(link = "logit"))
+idx.AT18 <- which(data.18$Insecticide=="Altacor" & data.18$Fungicide=="Tilt" & data.18$Adjuvant == "none")
+data.subset.AT18 <- data.18[idx.AT18,]
+AT18.glm <- glm((Dead / Treated) ~ log10(Dose),data = data.subset.AT18[!(data.subset.AT18$Dose<1),],weights = Treated, family = binomial(link = "logit"))
+
+#How many doses? (df)
+idx.APBO <- which(data.18$Insecticide=="Altacor" & data.18$Fungicide=="PBO" & data.18$Adjuvant == "none")
+data.subset.APBO <- data.18[idx.APBO,]
+data.subset.APBO
+#dose number = 5 (df=4)
+data.subset.AT18
+#dose number = 9 (df=8) 
+
+#Drms combination+dyne-amic
+APBO.LL <- drm(Dead/Treated~Dose,data=data.subset.APBO, weights=Treated, 
+                  type='binomial', fct=LL.2())
+
+#pdf('Altacor-PBO-None.pdf')
+plot(APBO.LL, main="Altacor-PBO-None", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+
+ED(APBO.LL, c(10,20,50), interval='delta')
+#        Estimate Std. Error    Lower    Upper
+#e:1:50  8.32244    1.17331  6.02279 10.62209
+summary(APBO.LL)
+#              Estimate Std. Error t-value   p-value 
+#b:(Intercept)  -1.5174     0.2187 -6.9382 3.970e-12 ***
+#e:(Intercept)   8.3224     1.1733  7.0931 1.311e-12 ***
+
+#Dose-response relationship
+noEffect(APBO.LL) #(p value=0.000 relationship=y)
+
+
+#Drms combination+dyne-amic
+AT18.LL <- drm(Dead/Treated~Dose,data=data.subset.AT18, weights=Treated, 
+                  type='binomial', fct=LL.2())
+
+#pdf('Altacor-Tilt-None-2018.pdf')
+plot(AT18.LL, main="Altacor-Tilt-None", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+
+ED(AT18.LL, c(10,20,50), interval='delta')
+#        Estimate Std. Error    Lower    Upper
+#e:1:50  8.32244    1.17331  6.02279 10.62209
+
+#Dose-response relationship
+noEffect(AT18.LL) #(p value=0.000 relationship=y)
+```
+
+
+
+
+Ecotox package analaysis (LC50 Ratio test)
+
+```{r}
+## Install/Load the needed packages
+
+#install.packages("drc")
+#install.packages("lmtest")
+#install.packages("sandwich")
+#install.packages("ecotox")
+
+library(drc)
+library(lmtest)
+library(sandwich)
+library(ecotox)
+library(ggplot2)
+```
+
+```{r}
+# Models with Relationships to compare
+#noEffect(DA.LL) #(p value= 0.0000 relationship=y)
+#noEffect(AT.LL) #(p value=0.000 relationship=y)
+#noEffect(PDA.LL) #(p value=6.397340e-07 relationship=Y)
+#noEffect(VDA.LL) #(p value=2.215235e-07 relationship=Y)
+#noEffect(ATDA.LL) #(p value=0.000 relationship=y)
+#noEffect(APDA.LL) #(p value=0.0000 relationship=y) 
+#noEffect(ALSDA.LL) #(p value=0.0000 relationship=y)
+
+
+#Comparisons to make:
+# AT vs ATDA
+# PDA vs APDA
+# AT vs APBO
+
+#Create glm for all:
+#AT
+idx.AT <- which(data$Insecticide=="Altacor" & data$Fungicide=="Tilt" & data$Adjuvant == "none")
+data.subset.AT <- data[idx.AT,]
+AT.glm <- glm((Dead / Treated) ~ log10(Dose),data = data.subset.AT[!(data.subset.AT$Dose==0),],weights = Treated, family = binomial(link = "logit"))
+#ATDA
+idx.ATDA <- which(data$Insecticide=="Altacor" & data$Fungicide=="Tilt" & data$Adjuvant == "Dyne-Amic")
+data.subset.ATDA <- data[idx.ATDA,]
+ATDA.glm <- glm((Dead / Treated) ~ log10(Dose),data = data.subset.ATDA[!(data.subset.ATDA$Dose==0),],weights = Treated, family = binomial(link = "logit"))
+data.subset.ATDA
+#PDA
+idx.PDA <- which(data$Insecticide=="none" & data$Fungicide=="Pristine" & data$Adjuvant == "Dyne-Amic")
+data.subset.PDA <- data[idx.PDA,]
+PDA.glm <- glm((Dead / Treated) ~ log10(Dose),data = data.subset.PDA[!(data.subset.PDA$Dose==0),],weights = Treated, family = binomial(link = "logit"))
+#APDA
+idx.APDA <- which(data$Insecticide=="Altacor" & data$Fungicide=="Pristine" & data$Adjuvant == "Dyne-Amic")
+data.subset.APDA <- data[idx.APDA,]
+APDA.glm <- glm((Dead / Treated) ~ log10(Dose),data = data.subset.APDA[!(data.subset.APDA$Dose==0),],weights = Treated, family = binomial(link = "logit"))
+```
+
+```{r}
+#Ratio Tests
+
+#AT vs ATDA
+ratios.ATvATDA <- ratio_test(model_1 = AT.glm, model_2 = ATDA.glm, percentage = 50,
+compare = "Altacor+Tilt - Altacor+Tilt+Dyne-Amic")
+# view ratio test results
+ratios.ATvATDA
+#compare                         percentage  dose_1     dose_2    se    test_stat   p_value
+#Altacor+Tilt - Altacor+Tilt+Dyne-Amic	50	9.473973	3.409233	0.1021027	4.347344	1.377962e-05
+#LC50 ratio pvalue:4.208352e-05
+
+#PDA vs APDA
+ratios.PDAvAPDA <- ratio_test(model_1 = PDA.glm, model_2 = APDA.glm, percentage = 50,
+compare = "Pristine+Dyne-Amic - Altacor+Pristine+Dyne-Amic")
+# view ratio test results
+ratios.PDAvAPDA
+#compare                                     percentage  dose_1     dose_2    se    test_stat   p_value
+#Pristine+Dyne-Amic - Altacor+Pristine+Dyne-Amic	50	30.65427	5.807854	0.07305477	9.889502	4.623239e-23
+#LC50 ratio pvalue:9.889502 (no sig difference in LC50 value)
+
+#APBO vs AT
+idx.APBO <- which(data.18$Insecticide=="Altacor" & data.18$Fungicide=="PBO" & data.18$Adjuvant == "none")
+data.subset.APBO <- data.18[idx.APBO,]
+APBO.glm <- glm((Dead / Treated) ~ log10(Dose),data = data.subset.APBO[!(data.subset.APBO$Dose==0),],weights = Treated, family = binomial(link = "logit"))
+idx.AT18 <- which(data.18$Insecticide=="Altacor" & data.18$Fungicide=="Tilt" & data.18$Adjuvant == "none")
+data.subset.AT18 <- data.18[idx.AT18,]
+AT18.glm <- glm((Dead / Treated) ~ log10(Dose),data = data.subset.AT18[!(data.subset.AT18$Dose==0),],weights = Treated, family = binomial(link = "logit"))
+
+ratios.ATvAPBO <- ratio_test(model_1 = AT18.glm, model_2 = APBO.glm, percentage = 50,
+compare = "Altacor+Tilt - Altacor+PBO")
+# view ratio test results
+ratios.ATvAPBO
+#compare              percentage  dose_1     dose_2    se      test_stat   p_value
+#Altacor+Tilt - Altacor+PBO	50	9.473973	8.322456	0.07143689	0.7878371	0.430792
+#LC50 ratio pvalue:0.430792 (no sig difference in LC50 value)
+
+#Results
+# Comparison        ratio         pvalue                 Conclusion
+# AT vs ATDA       2.778916     1.377962e-05     (sig difference in LC50 value) 
+# PDA vs APDA      5.278071     4.623239e-23     (sig difference in LC50 value)
+# AT18 vs APBO     1.138363     0.430792         (no sig difference in LC50 value)
+
+LCratio.ATvATDA <-ratios.ATvATDA$dose_1/ratios.ATvATDA$dose_2
+LCratio.PDAvAPDA <-ratios.PDAvAPDA$dose_1/ratios.PDAvAPDA$dose_2
+LCratio.ATvAPBO <-ratios.ATvAPBO$dose_1/ratios.ATvAPBO$dose_2
+
+LCratio.ATvATDA
+LCratio.PDAvAPDA
+LCratio.ATvAPBO
+
+ratios.ATvATDA$p_value
+ratios.PDAvAPDA$p_value
+ratios.ATvAPBO$p_value
+
+ratios.ATvATDA$dose_1
+ratios.PDAvAPDA$dose_1
+ratios.ATvAPBO$dose_1
+
+ratios.ATvATDA$dose_2
+ratios.PDAvAPDA$dose_2
+ratios.ATvAPBO$dose_2
+
+```
+

@@ -1,0 +1,1325 @@
+---
+title: "2020_DataCompiled_R2"
+author: "Emily Walker"
+date: "3/3/2021"
+output:
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Make Graphs using Dose Response Model 
+```{r}
+## Load the needed packages
+library(drc)
+library(lmtest)
+library(sandwich)
+library(ecotox)
+library(ggplot2)
+```
+
+```{r}
+#Load Data
+data <- read.csv("2020PotterTower_RawDatasummary.csv")
+data
+```
+
+```{r}
+# DRC Package Model
+  #idx <- which(data$Insecticide=="none" & data$Fungicide=="none" & data$Adjuvant == "none")
+  #length(idx) #29 #Number of cups treated
+  #data.subset <- data[idx,]
+  #data.subset
+
+#drm function 
+  #Example.LL <- drm(Dead/Treated~Dose,data=data.subset, weights=Treated, 
+  #                  type='binomial', fct=LL.2())
+  #summary(Example.LL)
+
+  #pdf('None-None-DyneAmic.pdf')
+  #plot(Example.LL, main="None-None-None", xlab="Field Application Rate", ylab="% Mortality")
+  #dev.off()
+
+  #modelFit(Example.LL) #better fit
+    #            Df Chisq value p value
+    #DRC model   14      65.435       0
+
+  #noEffect(Example.LL)
+    #Chi-square test              Df         p-value 
+    #   -0.002977488     3.000000000     1.000000000 
+    #very high p value which confirms that there is no dose-response relationship (can't reject null hypothesis?)
+    #Null hypothesis is that there is no dose-response relationship 
+
+  #ED(Example.LL, c(10,20,50), interval='delta')
+
+# Ecotox Package Model
+ #LC50 Ratio Test
+   #m1.glm <- glm((Dead / Treated) ~ log10(Dose),data = data.subset.model1[!(data.subset.model1$Dose==0),],weights = Treated, family = binomial(link = "logit"))
+   #m2.glm <- glm((Dead / Treated) ~ log10(Dose),data = data.subset.model2[!(data.subset.model2$Dose==0),],weights = Treated, family = binomial(link = "logit"))
+   #ratios.m1vm2 <- ratio_test(model_1 = m1.glm, model_2 = m2.glm, percentage = 50,
+   #compare = "Tilt-Altacor - Altacor+Tilt+Dyne-Amic")
+
+ # view ratio test results
+   #ratios.m1vm2
+```
+
+ROUND 1 DRC Analysis.................................
+```{r}
+#Mustang Maxx Positive Control(R1+R2)
+idx.MM.R1R2 <- which(data$Insecticide=="Mustang Maxx" & data$Fungicide=="none" & data$Adjuvant == "none")
+length(idx.MM.R1R2) #length= # cups treated so multiply by 20 to get # of bees
+## 32
+data.subset.MM.R1R2 <- data[idx.MM.R1R2,]
+
+#Drms individual
+MM.R1R2.LL <- drm(Dead/Treated~Dose,data=data.subset.MM.R1R2, weights=Treated, 
+                  type='binomial', fct=LL.2())
+
+#pdf('None-None-None.pdf')
+#dev.off()
+plot(MM.R1R2.LL, main="Mustang Maxx-None-None", xlab="Field Application Rate", ylab="% Mortality")
+
+ED(MM.R1R2.LL, c(10,20,50), interval='delta')
+#       Estimate Std. Error    Lower    Upper
+#e:1:50 1.038293   0.077030 0.887317 1.189269
+
+#Check fits
+modelFit(MM.R1R2.LL) 
+#            Df Chisq value p value
+#DRC model   25      59.835   1e-04
+
+#Dose-response relationship
+noEffect(MM.R1R2.LL) #(p value=0.0000 relationship=y)
+
+```
+```{r}
+#Individual
+idx.A <- which(data$Insecticide=="Altacor" & data$Fungicide=="none" & data$Adjuvant == "none")
+length(idx.A) #length= # cups treated so multiply by 20 to get # of bees
+## 38
+data.subset.A <- data[idx.A,]
+data.subset.A
+
+idx.I <- which(data$Insecticide=="Intrepid" & data$Fungicide=="none" & data$Adjuvant == "none")
+length(idx.I)
+## 39
+data.subset.I <- data[idx.I,]
+data.subset.I
+
+idx.T <- which(data$Insecticide=="none" & data$Fungicide=="Tilt" & data$Adjuvant == "none")
+length(idx.T)
+## 60
+data.subset.T <- data[idx.T,]
+#data.subset
+
+idx.P <- which(data$Insecticide=="none" & data$Fungicide=="Pristine" & data$Adjuvant == "none")
+length(idx.P)
+## 32
+data.subset.P <- data[idx.P,]
+#data.subset
+
+idx.LS <- which(data$Insecticide=="none" & data$Fungicide=="LunaSensation" & data$Adjuvant == "none")
+length(idx.LS)
+## 48
+data.subset.LS <- data[idx.LS,]
+#data.subset
+
+idx.V <- which(data$Insecticide=="none" & data$Fungicide=="Vangard" & data$Adjuvant == "none")
+length(idx.V)
+## 35
+data.subset.V <- data[idx.V,]
+data.subset.V
+#data.subset
+
+
+#Drms individual
+A.LL <- drm(Dead/Treated~Dose,data=data.subset.A[!(data.subset.A$Dose<10),], weights=Treated, 
+              type='binomial', fct=LL.2())
+I.LL <- drm(Dead/Treated~Dose,data=data.subset.I[!(data.subset.I$Dose<3),], weights=Treated, 
+                  type='binomial', fct=LL.2())
+T.LL <- drm(Dead/Treated~Dose,data=data.subset.T, weights=Treated, 
+                  type='binomial', fct=LL.2())
+P.LL <- drm(Dead/Treated~Dose,data=data.subset.P, weights=Treated, 
+                  type='binomial', fct=LL.4())
+LS.LL <- drm(Dead/Treated~Dose,data=data.subset.LS, weights=Treated, 
+                  type='binomial', fct=LL.2())
+V.LL <- drm(Dead/Treated~Dose,data=data.subset.V, weights=Treated, 
+                  type='binomial', fct=LL.2())
+
+#pdf('None-None-None.pdf')
+#dev.off()
+#pdf('Altacor-None-None.pdf')
+plot(A.LL, main="Altacor-None-None", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('Intrepid-None-None.pdf')
+plot(I.LL, main="Intrepid-None-None", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-Tilt-None.pdf')
+plot(T.LL, main="None-Tilt-None", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-Pristine-None.pdf')
+plot(P.LL, main="None-Pristine-None", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-LS-None.pdf')
+plot(LS.LL, main="None-Luna Sensation-None", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-Vangard-None.pdf')
+plot(V.LL, main="None-Vangard-None", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+
+
+ED(A.LL, c(10,20,50), interval='delta')  #Didn't work or got NAs (hashtagged out)
+ED(I.LL, c(10,20,50), interval='delta')
+ED(T.LL, c(10,20,50), interval='delta')
+#ED(P.LL, c(10,20,50), interval='delta') #No run
+#ED(LS.LL, c(10,20,50), interval='delta') #No run
+#ED(V.LL, c(10,20,50), interval='delta') #No run
+
+#Check fits
+modelFit(A.LL)  #No run
+#            Df Chisq value p value
+#DRC model   14      65.435       0
+modelFit(I.LL) 
+#            Df Chisq value p value
+#DRC model   30      587.08       0
+modelFit(T.LL) 
+#            Df Chisq value p value
+#DRC model   46      73.167  0.0066
+modelFit(P.LL) #No run
+#            Df Chisq value p value
+#DRC model   14      65.435       0
+#modelFit(LS.LL)  #No run
+#            Df Chisq value p value
+#DRC model   14      65.435       0
+#modelFit(V.LL)  #No run
+#            Df Chisq value p value
+#DRC model   14      65.435       0
+
+
+#Dose-response relationship
+noEffect(A.LL) #(p value=0.1937358 relationship=n)
+noEffect(I.LL) #(p value=0.5127347 relationship=n)
+noEffect(T.LL) #(p value=1.0000 relationship=n)
+noEffect(P.LL) #(p value=1.0000 relationship=n)
+noEffect(LS.LL) #(p value=1.0000 relationship=n)
+noEffect(V.LL) #(p value=1.0000 relationship=n)
+```
+
+```{r}
+#Individual Adjuvants (R1+R2)
+idx.DA.R1R2 <- which(data$Insecticide=="none" & data$Fungicide=="none" & data$Adjuvant == "Dyne-Amic")
+length(idx.DA.R1R2) #length= # cups treated so multiply by 20 to get # of bees
+## 82
+data.subset.DA.R1R2 <- data[idx.DA.R1R2,]
+
+idx.LI700 <- which(data$Insecticide=="none" & data$Fungicide=="none" & data$Adjuvant == "LI700")
+length(idx.LI700) #length= # cups treated so multiply by 20 to get # of bees
+## 86
+data.subset.LI700 <- data[idx.LI700,]
+
+idx.NFP <- which(data$Insecticide=="none" & data$Fungicide=="none" & data$Adjuvant == "NuFilmP")
+length(idx.NFP) #length= # cups treated so multiply by 20 to get # of bees
+## 33
+data.subset.NFP <- data[idx.NFP,]
+
+idx.A90 <- which(data$Insecticide=="none" & data$Fungicide=="none" & data$Adjuvant == "Activator90")
+length(idx.A90) #length= # cups treated so multiply by 20 to get # of bees
+## 30
+data.subset.A90 <- data[idx.A90,]
+
+idx.S90 <- which(data$Insecticide=="none" & data$Fungicide=="none" & data$Adjuvant == "Surf90")
+length(idx.S90) #length= # cups treated so multiply by 20 to get # of bees
+## 42
+data.subset.S90 <- data[idx.S90,]
+
+idx.LIB <- which(data$Insecticide=="none" & data$Fungicide=="none" & data$Adjuvant == "Liberate")
+length(idx.LIB) #length= # cups treated so multiply by 20 to get # of bees
+## 46
+data.subset.LIB <- data[idx.LIB,]
+
+idx.ATT <- which(data$Insecticide=="none" & data$Fungicide=="none" & data$Adjuvant == "Attach")
+length(idx.ATT) #length= # cups treated so multiply by 20 to get # of bees
+## 15
+data.subset.ATT <- data[idx.ATT,]
+data.subset.ATT
+
+idx.CHO <- which(data$Insecticide=="none" & data$Fungicide=="none" & data$Adjuvant == "Choice")
+length(idx.CHO) #length= # cups treated so multiply by 20 to get # of bees
+## 56
+data.subset.CHO <- data[idx.CHO,]
+
+idx.LAT <- which(data$Insecticide=="none" & data$Fungicide=="none" & data$Adjuvant == "LatronB")
+length(idx.LAT) #length= # cups treated so multiply by 20 to get # of bees
+## 45 
+data.subset.LAT <- data[idx.LAT,]
+
+
+
+
+#Drms individual
+DA.R1R2.LL <- drm(Dead/Treated~Dose,data=data.subset.DA.R1R2, weights=Treated, 
+                  type='binomial', fct=LL.2())
+LI700.LL <- drm(Dead/Treated~Dose,data=data.subset.LI700, weights=Treated, 
+                  type='binomial', fct=LL.2())
+NFP.LL <- drm(Dead/Treated~Dose,data=data.subset.NFP, weights=Treated, 
+                  type='binomial', fct=LL.2())
+A90.LL <- drm(Dead/Treated~Dose,data=data.subset.A90, weights=Treated, 
+                  type='binomial', fct=LL.2())
+S90.LL <- drm(Dead/Treated~Dose,data=data.subset.S90, weights=Treated, 
+                  type='binomial', fct=LL.2())
+LIB.LL <- drm(Dead/Treated~Dose,data=data.subset.LIB, weights=Treated, 
+                  type='binomial', fct=LL.2())
+#ATT.LL <- drm(Dead/Treated~Dose,data=data.subset.ATT, weights=Treated, 
+#                  type='binomial', fct=LL.2())
+CHO.LL <- drm(Dead/Treated~Dose,data=data.subset.CHO, weights=Treated, 
+                  type='binomial', fct=LL.2())
+LAT.LL <- drm(Dead/Treated~Dose,data=data.subset.LAT, weights=Treated, 
+                  type='binomial', fct=LL.2())
+
+
+#pdf('None-None-None.pdf')
+#dev.off()
+#pdf('None-None-Dyne-Amic.pdf')
+plot(DA.R1R2.LL, main="None-None-Dyne Amic", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-None-LI 700.pdf')
+plot(LI700.LL, main="None-None-LI700", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-None-Nu Film P.pdf')
+plot(NFP.LL, main="None-None-NuFilmP", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-None-Activator 90.pdf')
+plot(A90.LL, main="None-None-Activator90", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-None-Surf 90.pdf')
+plot(S90.LL, main="None-None-Surf90", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-None-Liberate.pdf')
+plot(LIB.LL, main="None-None-Liberate", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-None-Attach.pdf')
+#plot(ATT.LL, main="None-None-Attach", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-None-Choice.pdf')
+plot(CHO.LL, main="None-None-Choice", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-None-Latron B.pdf')
+plot(LAT.LL, main="None-None-LatronB", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+
+ED(DA.R1R2.LL, c(10,20,50), interval='delta')  
+#       Estimate Std. Error    Lower    Upper
+#e:1:10  4.50685    0.39056  3.74136  5.27234
+#e:1:20  8.05436    0.48731  7.09924  9.00948
+#e:1:50 21.73191    1.23864 19.30422 24.15961
+ED(LI700.LL, c(10,20,50), interval='delta') 
+ED(NFP.LL, c(10,20,50), interval='delta') 
+ED(A90.LL, c(10,20,50), interval='delta') 
+ED(S90.LL, c(10,20,50), interval='delta') 
+#       Estimate Std. Error    Lower    Upper
+#e:1:10  3.26862    0.36770  2.54794  3.98930
+#e:1:20  5.09066    0.38587  4.33438  5.84695
+#e:1:50 10.85679    0.58736  9.70558 12.00800
+ED(LIB.LL, c(10,20,50), interval='delta') 
+#       Estimate Std. Error    Lower    Upper
+#e:1:10  5.67907    0.65022  4.40466  6.95348
+#e:1:20 10.29430    0.83913  8.64964 11.93896
+#e:1:50 28.45750    2.42823 23.69826 33.21674
+#ED(ATT.LL, c(10,20,50), interval='delta') 
+ED(CHO.LL, c(10,20,50), interval='delta') 
+ED(LAT.LL, c(10,20,50), interval='delta') 
+
+
+
+#Check fits
+modelFit(DA.R1R2.LL) 
+#            Df Chisq value p value
+#DRC model   69      498.14       0
+modelFit(LI700.LL) 
+#            Df Chisq value p value
+#DRC model   72      471.97       0
+modelFit(NFP.LL) 
+#            Df Chisq value p value
+#DRC model   24      36.936  0.0444
+modelFit(A90.LL) 
+#            Df Chisq value p value
+#DRC model   23      228.98       0
+modelFit(S90.LL) 
+#            Df Chisq value p value
+#DRC model   33      377.36       0
+modelFit(LIB.LL) 
+#            Df Chisq value p value
+#DRC model   38      277.63       0
+#modelFit(ATT.LL) 
+#            Df Chisq value p value
+#
+modelFit(CHO.LL) 
+#            Df Chisq value p value
+#DRC model   46      561.12       0
+modelFit(LAT.LL) 
+#            Df Chisq value p value
+#DRC model   36      62.482   0.004
+
+#Dose-response relationship
+noEffect(DA.R1R2.LL) #(p value= 0.0000 relationship=y)
+noEffect(LI700.LL) #(p value=1.0000 relationship=n)
+noEffect(NFP.LL) #(p value=1.0000 relationship=n)
+noEffect(A90.LL) #(p value=1.0000 relationship=n)
+noEffect(S90.LL) #(p value=0.0000 relationship=y)
+noEffect(LIB.LL) #(p value=0.0000 relationship=y)
+#noEffect(ATT.LL) #(p value= relationship=) no run
+noEffect(CHO.LL) #(p value=1.0000 relationship=n)
+noEffect(LAT.LL) #(p value=1.0000 relationship=n)
+
+
+```
+
+ROUND 2 DRC Analysis.................................
+
+```{r}
+#Individual + Dyne-Amic
+idx.ADA <- which(data$Insecticide=="Altacor" & data$Fungicide=="none" & data$Adjuvant == "Dyne-Amic")
+length(idx.ADA) #length= # cups treated so multiply by 20 to get # of bees
+## 34
+data.subset.ADA <- data[idx.ADA,]
+data.subset.ADA
+idx.IDA <- which(data$Insecticide=="Intrepid" & data$Fungicide=="none" & data$Adjuvant == "Dyne-Amic")
+length(idx.IDA)
+## 34
+data.subset.IDA <- data[idx.IDA,]
+#data.subset.IDA
+
+idx.TDA <- which(data$Insecticide=="none" & data$Fungicide=="Tilt" & data$Adjuvant == "Dyne-Amic")
+length(idx.TDA)
+data.subset.TDA <- data[idx.TDA,]
+## 35
+
+idx.PDA <- which(data$Insecticide=="none" & data$Fungicide=="Pristine" & data$Adjuvant == "Dyne-Amic")
+length(idx.PDA)
+## 34 
+data.subset.PDA <- data[idx.PDA,]
+#data.subset
+idx.LSDA <- which(data$Insecticide=="none" & data$Fungicide=="LunaSensation" & data$Adjuvant == "Dyne-Amic")
+length(idx.LSDA)
+## 45 
+data.subset.LSDA <- data[idx.LSDA,]
+#data.subset
+idx.VDA <- which(data$Insecticide=="none" & data$Fungicide=="Vangard" & data$Adjuvant == "Dyne-Amic")
+length(idx.VDA)
+## 34
+data.subset.VDA <- data[idx.VDA,]
+#data.subset
+
+#Drms individual +dyneamic
+ADA.LL <- drm(Dead/Treated~Dose,data=data.subset.ADA, weights=Treated, 
+                  type='binomial', fct=LL.2())
+IDA.LL <- drm(Dead/Treated~Dose,data=data.subset.IDA, weights=Treated, 
+                  type='binomial', fct=LL.2())
+TDA.LL <- drm(Dead/Treated~Dose,data=data.subset.TDA, weights=Treated, 
+                  type='binomial', fct=LL.2())
+PDA.LL <- drm(Dead/Treated~Dose,data=data.subset.PDA, weights=Treated, 
+                  type='binomial', fct=LL.2())
+LSDA.LL <- drm(Dead/Treated~Dose,data=data.subset.LSDA, weights=Treated, 
+                  type='binomial', fct=LL.2())
+VDA.LL <- drm(Dead/Treated~Dose,data=data.subset.VDA, weights=Treated, 
+                  type='binomial', fct=LL.2())
+
+
+#pdf('None-None-None.pdf')
+#dev.off()
+#pdf('Altacor-None-DA.pdf')
+plot(ADA.LL, main="Altacor-None-DyneAmic", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('Intrepid-None-DA.pdf')
+plot(IDA.LL, main="Intrepid-None-DyneAmic", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-Tilt-DA.pdf')
+plot(TDA.LL, main="None-Tilt-DyneAmic", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-Pristine-DA.pdf')
+plot(PDA.LL, main="None-Pristine-DyneAmic", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-LS-DA.pdf')
+plot(LSDA.LL, main="None-Luna Sensation-DyneAmic", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-Vangard-Dyne-Amic.pdf')
+plot(VDA.LL, main="None-Vangard-DyneAmic", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+
+
+ED(ADA.LL, c(10,20,50), interval='delta')  
+#       Estimate Std. Error    Lower    Upper
+#e:1:10  9.02220    0.55766  7.92921 10.11519
+#e:1:20 11.41355    0.54594 10.34354 12.48357
+#e:1:50 17.05989    0.69502 15.69768 18.42210
+
+ED(IDA.LL, c(10,20,50), interval='delta')
+#       Estimate Std. Error    Lower    Upper
+#e:1:10  8.37194    0.70934  6.98167  9.76222
+#e:1:20 11.99872    0.74255 10.54335 13.45409
+#e:1:50 22.19964    1.42095 19.41464 24.98465
+ED(TDA.LL, c(10,20,50), interval='delta')
+#       Estimate Std. Error    Lower    Upper
+#e:1:10  13.1402     2.0321   9.1573  17.1231
+#e:1:20  29.3019     6.3324  16.8907  41.7131
+#e:1:50 115.4269    51.4281  14.6298 216.2240
+ED(PDA.LL, c(10,20,50), interval='delta')
+#       Estimate Std. Error    Lower    Upper
+#e:1:10  7.63148    0.40750  6.83280  8.43016
+#e:1:20  9.26938    0.38979  8.50540 10.03336
+#e:1:50 12.92425    0.44943 12.04339 13.80512
+ED(LSDA.LL, c(10,20,50), interval='delta')
+#       Estimate Std. Error    Lower    Upper
+#e:1:10  6.20120    0.47338  5.27339  7.12901
+#e:1:20  9.03169    0.50980  8.03250 10.03087
+#e:1:50 17.17594    0.87893 15.45327 18.89861
+ED(VDA.LL, c(10,20,50), interval='delta')
+
+
+
+#Check fits
+modelFit(ADA.LL) 
+#            Df Chisq value p value
+#DRC model   28      88.017       0
+modelFit(IDA.LL) 
+#            Df Chisq value p value
+#DRC model   28      372.96       0
+modelFit(TDA.LL) 
+#            Df Chisq value p value
+#DRC model   29      55.354  0.0023
+modelFit(PDA.LL) 
+#            Df Chisq value p value
+#DRC model   28      117.12       0
+modelFit(LSDA.LL) 
+#            Df Chisq value p value
+#DRC model   38      344.04       0
+modelFit(VDA.LL) 
+#            Df Chisq value p value
+#DRC model   28      249.29       0
+
+#Dose-response relationship
+noEffect(ADA.LL) #(p value=0.0000 relationship=Y)
+noEffect(IDA.LL) #(p value=1.110223e-16 relationship=Y)
+noEffect(TDA.LL) #(p value=1.853462e-11 relationship=Y)
+noEffect(PDA.LL) #(p value=0.0000 relationship=Y)
+noEffect(LSDA.LL) #(p value=0.0000 relationship=Y)
+noEffect(VDA.LL) #(p value=1.00000 relationship=n)
+```
+
+```{r}
+#Individual + LI700
+idx.ALI700 <- which(data$Insecticide=="Altacor" & data$Fungicide=="none" & data$Adjuvant == "LI700")
+length(idx.ALI700) #length= # cups treated so multiply by 20 to get # of bees
+## 27
+data.subset.ALI700 <- data[idx.ALI700,]
+#data.subset
+idx.ILI700 <- which(data$Insecticide=="Intrepid" & data$Fungicide=="none" & data$Adjuvant == "LI700")
+length(idx.ILI700)
+## 31 
+data.subset.ILI700 <- data[idx.ILI700,]
+#data.subset.ILI700
+
+idx.TLI700 <- which(data$Insecticide=="none" & data$Fungicide=="Tilt" & data$Adjuvant == "LI700")
+length(idx.TLI700)
+data.subset.TLI700 <- data[idx.TLI700,]
+## 35
+
+idx.PLI700 <- which(data$Insecticide=="none" & data$Fungicide=="Pristine" & data$Adjuvant == "LI700")
+length(idx.PLI700)
+## 31
+data.subset.PLI700 <- data[idx.PLI700,]
+#data.subset
+idx.LSLI700 <- which(data$Insecticide=="none" & data$Fungicide=="LunaSensation" & data$Adjuvant == "LI700")
+length(idx.LSLI700)
+## 31 
+data.subset.LSLI700 <- data[idx.LSLI700,]
+#data.subset
+idx.VLI700 <- which(data$Insecticide=="none" & data$Fungicide=="Vangard" & data$Adjuvant == "LI700")
+length(idx.VLI700)
+## 44
+data.subset.VLI700 <- data[idx.VLI700,]
+#data.subset
+
+#Drms individual +dyneamic
+ALI700.LL <- drm(Dead/Treated~Dose,data=data.subset.ALI700, weights=Treated, 
+                  type='binomial', fct=LL.2())
+ILI700.LL <- drm(Dead/Treated~Dose,data=data.subset.ILI700, weights=Treated, 
+                  type='binomial', fct=LL.2())
+TLI700.LL <- drm(Dead/Treated~Dose,data=data.subset.TLI700, weights=Treated, 
+                  type='binomial', fct=LL.2())
+PLI700.LL <- drm(Dead/Treated~Dose,data=data.subset.PLI700, weights=Treated, 
+                  type='binomial', fct=LL.2())
+LSLI700.LL <- drm(Dead/Treated~Dose,data=data.subset.LSLI700, weights=Treated, 
+                  type='binomial', fct=LL.2())
+VLI700.LL <- drm(Dead/Treated~Dose,data=data.subset.VLI700, weights=Treated, 
+                  type='binomial', fct=LL.2())
+
+
+#pdf('None-None-None.pdf')
+#dev.off()
+#pdf('Altacor-None-LI700.pdf')
+plot(ALI700.LL, main="Altacor-None-LI700", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('Intrepid-None-LI700.pdf')
+plot(ILI700.LL, main="Intrepid-None-LI700", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-Tilt-LI700.pdf')
+plot(TLI700.LL, main="None-Tilt-LI700", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-Pristine-LI700.pdf')
+plot(PLI700.LL, main="None-Pristine-LI700", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-LS-LI700.pdf')
+plot(LSLI700.LL, main="None-Luna Sensation-LI700", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-Vangard-LI700.pdf')
+plot(VLI700.LL, main="None-Vangard-LI700", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+
+
+ED(ALI700.LL, c(10,20,50), interval='delta') 
+#       Estimate Std. Error    Lower    Upper
+#e:1:10  16.5526     2.6656  11.3281  21.7771
+#e:1:20  31.8386     4.7339  22.5604  41.1168
+#e:1:50  97.4106    30.1245  38.3677 156.4534
+
+ED(ILI700.LL, c(10,20,50), interval='delta')
+#       Estimate Std. Error    Lower    Upper
+#e:1:10  19.6429     3.0740  13.6179  25.6679
+#e:1:20  39.1846     5.6668  28.0778  50.2913
+#e:1:50 127.5890    39.7928  49.5965 205.5815
+
+ED(TLI700.LL, c(10,20,50), interval='delta')
+ED(PLI700.LL, c(10,20,50), interval='delta')
+ED(LSLI700.LL, c(10,20,50), interval='delta')
+ED(VLI700.LL, c(10,20,50), interval='delta')
+#       Estimate Std. Error   Lower   Upper
+#e:1:10  10.3130     1.4623  7.4471 13.1790
+#e:1:20  19.2497     1.7733 15.7740 22.7253
+#e:1:50  55.9454     6.0537 44.0803 67.8104
+
+
+#Check fits
+modelFit(ALI700.LL) 
+#            Df Chisq value p value
+#DRC model   20      44.573  0.0013
+modelFit(ILI700.LL) 
+#            Df Chisq value p value
+#DRC model   24      112.83       0
+modelFit(TLI700.LL) 
+#            Df Chisq value p value
+#DRC model   27      161.38       0
+modelFit(PLI700.LL) 
+#            Df Chisq value p value
+#DRC model   24      78.954       0
+modelFit(LSLI700.LL) 
+#            Df Chisq value p value
+#DRC model   24      55.885   2e-04
+modelFit(VLI700.LL) 
+#            Df Chisq value p value
+#DRC model   35      199.87       0
+
+
+#Dose-response relationship
+noEffect(ALI700.LL) #(p value=1.187152e-04 relationship=Y)
+noEffect(ILI700.LL) #(p value=2.551352e-06 relationship=Y)
+noEffect(TLI700.LL) #(p value=1.0000 relationship=n) 
+noEffect(PLI700.LL) #(p value=1.0000 relationship=n)
+noEffect(LSLI700.LL) #(p value=1.0000 relationship=n)
+noEffect(VLI700.LL) #(p value=0.0000 relationship=Y)
+```
+
+
+
+```{r}
+#Individual + NFP
+idx.ANFP <- which(data$Insecticide=="Altacor" & data$Fungicide=="none" & data$Adjuvant == "NuFilmP")
+length(idx.ANFP) #length= # cups treated so multiply by 20 to get # of bees
+## 15
+data.subset.ANFP <- data[idx.ANFP,]
+data.subset.ANFP
+#data.subset
+idx.INFP <- which(data$Insecticide=="Intrepid" & data$Fungicide=="none" & data$Adjuvant == "NuFilmP")
+length(idx.INFP)
+## 15 
+data.subset.INFP <- data[idx.INFP,]
+#data.subset.INFP
+
+idx.TNFP <- which(data$Insecticide=="none" & data$Fungicide=="Tilt" & data$Adjuvant == "NuFilmP")
+length(idx.TNFP)
+data.subset.TNFP <- data[idx.TNFP,]
+## 15
+
+idx.PNFP <- which(data$Insecticide=="none" & data$Fungicide=="Pristine" & data$Adjuvant == "NuFilmP")
+length(idx.PNFP)
+## 15
+data.subset.PNFP <- data[idx.PNFP,]
+#data.subset
+idx.LSNFP <- which(data$Insecticide=="none" & data$Fungicide=="LunaSensation" & data$Adjuvant == "NuFilmP")
+length(idx.LSNFP)
+## 12 
+data.subset.LSNFP <- data[idx.LSNFP,]
+#data.subset
+idx.VNFP <- which(data$Insecticide=="none" & data$Fungicide=="Vangard" & data$Adjuvant == "NuFilmP")
+length(idx.VNFP)
+## 14
+data.subset.VNFP <- data[idx.VNFP,]
+#data.subset
+
+#Drms individual +dyneamic
+ANFP.LL <- drm(Dead/Treated~Dose,data=data.subset.ANFP[!(data.subset.ANFP$Dose<3),], weights=Treated, 
+                  type='binomial', fct=LL.2())
+INFP.LL <- drm(Dead/Treated~Dose,data=data.subset.INFP, weights=Treated, 
+                  type='binomial', fct=LL.2())
+TNFP.LL <- drm(Dead/Treated~Dose,data=data.subset.TNFP, weights=Treated, 
+                  type='binomial', fct=LL.2())
+PNFP.LL <- drm(Dead/Treated~Dose,data=data.subset.PNFP, weights=Treated, 
+                  type='binomial', fct=LL.2())
+LSNFP.LL <- drm(Dead/Treated~Dose,data=data.subset.LSNFP, weights=Treated, 
+                  type='binomial', fct=LL.2())
+VNFP.LL <- drm(Dead/Treated~Dose,data=data.subset.VNFP, weights=Treated, 
+                  type='binomial', fct=LL.2())
+
+
+#pdf('None-None-None.pdf')
+#dev.off()
+#pdf('None-Altacor-NFP.pdf')
+plot(ANFP.LL, main="Altacor-None-NFP", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('Intrepid-None-NFP.pdf')
+plot(INFP.LL, main="Intrepid-None-NFP", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-Tilt-NFP.pdf')
+plot(TNFP.LL, main="None-Tilt-NFP", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-Pristine-NFP.pdf')
+plot(PNFP.LL, main="None-Pristine-NFP", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-LS-NFP.pdf')
+plot(LSNFP.LL, main="None-Luna Sensation-NFP", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-Vangard-NFP.pdf')
+plot(VNFP.LL, main="None-Vangard-NFP", xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+
+
+ED(ANFP.LL, c(10,20,50), interval='delta')  
+#ED(INFP.LL, c(10,20,50), interval='delta') #didn't work
+ED(TNFP.LL, c(10,20,50), interval='delta')
+ED(PNFP.LL, c(10,20,50), interval='delta')
+ED(LSNFP.LL, c(10,20,50), interval='delta')
+ED(VNFP.LL, c(10,20,50), interval='delta')
+#        Estimate Std. Error     Lower     Upper
+#e:1:10    53.192     37.347   -20.007   126.391
+#e:1:20   198.709    207.503  -207.990   605.408
+#e:1:50  1891.004   3333.981 -4643.478  8425.486
+
+
+#Check fits
+#modelFit(ANFP.LL) 
+#            Df Chisq value p value
+#DRC model   20      44.573  0.0013
+#modelFit(INFP.LL) 
+#            Df Chisq value p value
+#DRC model   24      112.83       0
+modelFit(TNFP.LL) 
+#            Df Chisq value p value
+#DRC model   10      16.524  0.0856
+modelFit(PNFP.LL) 
+#            Df Chisq value p value
+#DRC model   10       223.7       0
+modelFit(LSNFP.LL) 
+#            Df Chisq value p value
+#DRC model    7      8.5228  0.2888
+modelFit(VNFP.LL) 
+#            Df Chisq value p value
+#DRC model   10      10.734  0.3786
+
+#Dose-response relationship
+noEffect(ANFP.LL) #(p value= 0.1373117  relationship=n) #remove dose <3 then run
+noEffect(INFP.LL) #(p value= 0.1637592 relationship=n)
+noEffect(TNFP.LL) #(p value=1.0000 relationship=n) 
+noEffect(PNFP.LL) #(p value=1.0000 relationship=n)
+noEffect(LSNFP.LL) #(p value=1.0000 relationship=n)
+noEffect(VNFP.LL) #(p value=0.02438679 relationship=Y)
+```
+
+SUMMARY of R1+R2.................................
+
+```{r}
+#Evaluate all fits
+
+#######Individual Pesticides
+#modelFit(A.LL)  #No run
+#            Df Chisq value p value
+#DRC model   14      65.435       0
+modelFit(I.LL) 
+#            Df Chisq value p value
+#DRC model   30      587.08       0
+modelFit(T.LL) 
+#            Df Chisq value p value
+#DRC model   46      73.167  0.0066
+#modelFit(P.LL) #No run
+#            Df Chisq value p value
+#DRC model   14      65.435       0
+#modelFit(LS.LL)  #No run
+#            Df Chisq value p value
+#DRC model   14      65.435       0
+#modelFit(V.LL)  #No run
+#            Df Chisq value p value
+#DRC model   14      65.435       0
+modelFit(MM.R1R2.LL) 
+#            Df Chisq value p value
+#DRC model   25      59.835   1e-04
+
+#######Individual Adjuvants
+modelFit(DA.R1R2.LL) 
+#            Df Chisq value p value
+#DRC model   69      498.14       0
+modelFit(LI700.LL) 
+#            Df Chisq value p value
+#DRC model   72      471.97       0
+modelFit(NFP.LL) 
+#            Df Chisq value p value
+#DRC model   24      36.936  0.0444
+modelFit(A90.LL) 
+#            Df Chisq value p value
+#DRC model   23      228.98       0
+modelFit(S90.LL) 
+#            Df Chisq value p value
+#DRC model   33      377.36       0
+modelFit(LIB.LL) 
+#            Df Chisq value p value
+#DRC model   38      277.63       0
+#modelFit(ATT.LL) 
+#            Df Chisq value p value
+#
+modelFit(CHO.LL) 
+#            Df Chisq value p value
+#DRC model   46      561.12       0
+modelFit(LAT.LL) 
+#            Df Chisq value p value
+#DRC model   36      62.482   0.004
+
+######Individual + DA
+modelFit(ADA.LL) 
+#            Df Chisq value p value
+#DRC model   28      88.017       0
+modelFit(IDA.LL) 
+#            Df Chisq value p value
+#DRC model   28      372.96       0
+modelFit(TDA.LL) 
+#            Df Chisq value p value
+#DRC model   29      55.354  0.0023
+modelFit(PDA.LL) 
+#            Df Chisq value p value
+#DRC model   28      117.12       0
+modelFit(LSDA.LL) 
+#            Df Chisq value p value
+#DRC model   38      344.04       0
+modelFit(VDA.LL) 
+#            Df Chisq value p value
+#DRC model   28      249.29       0
+
+####Individual + LI700
+modelFit(ALI700.LL) 
+#            Df Chisq value p value
+#DRC model   20      44.573  0.0013
+modelFit(ILI700.LL) 
+#            Df Chisq value p value
+#DRC model   24      112.83       0
+modelFit(TLI700.LL) 
+#            Df Chisq value p value
+#DRC model   27      161.38       0
+modelFit(PLI700.LL) 
+#            Df Chisq value p value
+#DRC model   24      78.954       0
+modelFit(LSLI700.LL) 
+#            Df Chisq value p value
+#DRC model   24      55.885   2e-04
+modelFit(VLI700.LL) 
+#            Df Chisq value p value
+#DRC model   35      199.87       0
+
+#####Individual + NFP
+#modelFit(ANFP.LL) 
+#            Df Chisq value p value
+#DRC model   20      44.573  0.0013
+#modelFit(INFP.LL) 
+#            Df Chisq value p value
+#DRC model   24      112.83       0
+modelFit(TNFP.LL) 
+#            Df Chisq value p value
+#DRC model   10      16.524  0.0856
+modelFit(PNFP.LL) 
+#            Df Chisq value p value
+#DRC model   10       223.7       0
+modelFit(LSNFP.LL) 
+#            Df Chisq value p value
+#DRC model    7      8.5228  0.2888
+modelFit(VNFP.LL) 
+#            Df Chisq value p value
+#DRC model   10      10.734  0.3786
+
+
+#Notes
+
+```
+
+
+```{r}
+#Dose Response Relationships Summary
+
+#Individual Pesticides
+noEffect(MM.R1R2.LL) #(p value=0.0000 relationship=y)
+noEffect(A.LL) #did not run
+noEffect(I.LL) #(p value=1.0000 relationship=n)
+noEffect(T.LL) #(p value=1.0000 relationship=n)
+noEffect(P.LL) #(p value=1.0000 relationship=n)
+noEffect(LS.LL) #(p value=1.0000 relationship=n)
+noEffect(V.LL) #(p value=1.0000 relationship=n)
+
+#Individual Adjuvants
+noEffect(DA.R1R2.LL) #(p value= 0.0000 relationship=y)
+noEffect(LI700.LL) #(p value=1.0000 relationship=n)
+noEffect(NFP.LL) #(p value=1.0000 relationship=n)
+noEffect(A90.LL) #(p value=1.0000 relationship=n)
+noEffect(S90.LL) #(p value=0.0000 relationship=y)
+noEffect(LIB.LL) #(p value=0.0000 relationship=y)
+#noEffect(ATT.LL) #(p value= relationship=) no run
+noEffect(CHO.LL) #(p value=1.0000 relationship=n)
+noEffect(LAT.LL) #(p value=1.0000 relationship=n)
+
+#Individual + DA
+noEffect(ADA.LL) #(p value=0.0000 relationship=Y)
+noEffect(IDA.LL) #(p value=1.110223e-16 relationship=Y)
+noEffect(TDA.LL) #(p value=1.853462e-11 relationship=Y)
+noEffect(PDA.LL) #(p value=0.0000 relationship=Y)
+noEffect(LSDA.LL) #(p value=0.0000 relationship=Y)
+noEffect(VDA.LL) #(p value=1.00000 relationship=n)
+
+#Individual + LI700
+noEffect(ALI700.LL) #(p value=1.187152e-04 relationship=Y)
+noEffect(ILI700.LL) #(p value=2.551352e-06 relationship=Y)
+noEffect(TLI700.LL) #(p value=1.0000 relationship=n) 
+noEffect(PLI700.LL) #(p value=1.0000 relationship=n)
+noEffect(LSLI700.LL) #(p value=1.0000 relationship=n)
+noEffect(VLI700.LL) #(p value=0.0000 relationship=Y)
+
+#Individual + NFP
+noEffect(ANFP.LL) #(p value= relationship=) No run!
+noEffect(INFP.LL) #(p value= 0.1637592 relationship=n)
+noEffect(TNFP.LL) #(p value=1.0000 relationship=n) 
+noEffect(PNFP.LL) #(p value=1.0000 relationship=n)
+noEffect(LSNFP.LL) #(p value=1.0000 relationship=n)
+noEffect(VNFP.LL) #(p value=0.02438679 relationship=Y)
+
+#Relationships
+noEffect(DA.R1R2.LL) #(p value= 0.0000 relationship=y)
+noEffect(S90.LL) #(p value=0.0000 relationship=y)
+noEffect(LIB.LL) #(p value=0.0000 relationship=y)
+noEffect(ADA.LL) #(p value=0.0000 relationship=Y)
+noEffect(IDA.LL) #(p value=1.110223e-16 relationship=Y)
+noEffect(TDA.LL) #(p value=1.853462e-11 relationship=Y)
+noEffect(PDA.LL) #(p value=0.0000 relationship=Y)
+noEffect(LSDA.LL) #(p value=0.0000 relationship=Y)
+noEffect(ALI700.LL) #(p value=1.187152e-04 relationship=Y)
+noEffect(ILI700.LL) #(p value=2.551352e-06 relationship=Y)
+noEffect(VLI700.LL) #(p value=0.0000 relationship=Y)
+noEffect(VNFP.LL) #(p value=0.02438679 relationship=Y)
+
+
+ED(DA.R1R2.LL, c(20,50), interval='delta') 
+#       Estimate Std. Error   Lower   Upper
+#e:1:50  21.7319     1.2386 19.3042 24.1596
+ED(S90.LL, c(20,50), interval='delta') 
+#       Estimate Std. Error   Lower   Upper
+#e:1:50 10.85679    0.58736  9.70558 12.00800
+ED(LIB.LL, c(20,50), interval='delta') 
+#       Estimate Std. Error   Lower   Upper
+#e:1:50  28.4575     2.4282 23.6983 33.2167
+ED(ADA.LL, c(20,50), interval='delta') 
+#       Estimate Std. Error   Lower   Upper
+#e:1:50 17.05989    0.69502 15.69768 18.42210
+ED(IDA.LL, c(20,50), interval='delta')
+#       Estimate Std. Error   Lower   Upper
+#e:1:50  22.1996     1.4209 19.4146 24.9847
+ED(TDA.LL, c(20,50), interval='delta') 
+#       Estimate Std. Error   Lower   Upper
+#e:1:50  115.427     51.428  14.630 216.224
+ED(PDA.LL, c(20,50), interval='delta') 
+#       Estimate Std. Error   Lower   Upper
+#e:1:50 12.92425    0.44943 12.04339 13.80512
+ED(LSDA.LL, c(20,50), interval='delta') 
+#       Estimate Std. Error   Lower   Upper
+#e:1:50 17.17594    0.87893 15.45327 18.89861
+ED(ALI700.LL, c(20,50), interval='delta')
+#       Estimate Std. Error   Lower   Upper
+#e:1:50   97.411     30.124  38.368 156.453
+ED(ILI700.LL, c(20,50), interval='delta')
+#       Estimate Std. Error   Lower   Upper
+#e:1:50  127.589     39.793  49.597 205.581
+ED(VLI700.LL, c(20,50), interval='delta') 
+#       Estimate Std. Error   Lower   Upper
+#e:1:50  55.9454     6.0537 44.0803 67.8104
+ED(VNFP.LL, c(20,50), interval='delta') 
+#       Estimate Std. Error   Lower   Upper
+#e:1:50   1891.0     3334.0 -4643.5  8425.5
+ED(MM.R1R2.LL, c(20,50), interval='delta')
+#       Estimate Std. Error   Lower   Upper
+#e:1:50  1.03829    0.07703 0.88732 1.18927
+
+summary(MM.R1R2.LL) 
+summary(DA.R1R2.LL) 
+summary(S90.LL) 
+summary(LIB.LL) 
+summary(ADA.LL) 
+summary(IDA.LL) 
+summary(TDA.LL) 
+summary(PDA.LL) 
+summary(LSDA.LL) 
+summary(ALI700.LL) 
+summary(ILI700.LL) 
+summary(VLI700.LL) 
+summary(VNFP.LL)
+```
+
+```{r}
+#Plots
+
+#pdf('Altacor-None_None.pdf')
+plot(A.LL, main="Altacor-None-None", ylim=c(0,1),xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('Intrepid-None-None.pdf')
+plot(I.LL, main="Intrepid-None-None", ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-Tilt-None.pdf')
+plot(T.LL, main="None-Tilt-None",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-Pristine-None.pdf')
+plot(P.LL, main="None-Pristine-None",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-LS-None.pdf')
+plot(LS.LL, main="None-Luna Sensation-None",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-Vangard-None.pdf')
+plot(V.LL, main="None-Vangard-None", ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+
+#pdf('None-None-DyneAmic.pdf')
+plot(DA.R1R2.LL, main="None-None-Dyne Amic",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-None-LI 700.pdf')
+plot(LI700.LL, main="None-None-LI700",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-None-Nu Film P.pdf')
+plot(NFP.LL, main="None-None-NuFilmP",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-None-Activator 90.pdf')
+plot(A90.LL, main="None-None-Activator90",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-None-Surf 90.pdf')
+plot(S90.LL, main="None-None-Surf90",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-None-Liberate.pdf')
+plot(LIB.LL, main="None-None-Liberate",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-None-Attach.pdf')
+#plot(ATT.LL, main="None-None-Attach",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-None-Choice.pdf')
+plot(CHO.LL, main="None-None-Choice",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-None-Latron B.pdf')
+plot(LAT.LL, main="None-None-LatronB",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+
+#pdf('Altacor-None-DA.pdf')
+plot(ADA.LL, main="Altacor-None-DyneAmic",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+pdf('Intrepid-None-DA.pdf')
+#plot(IDA.LL, main="Intrepid-None-DyneAmic",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-Tilt-DA.pdf')
+plot(TDA.LL, main="None-Tilt-DyneAmic",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-Pristine-DA.pdf')
+plot(PDA.LL, main="None-Pristine-DyneAmic",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-LS-DA.pdf')
+plot(LSDA.LL, main="None-Luna Sensation-DyneAmic",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-Vangard-Dyne-Amic.pdf')
+plot(VDA.LL, main="None-Vangard-DyneAmic",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+
+#pdf('Altacor-None-LI700.pdf')
+plot(ALI700.LL, main="Altacor-None-LI700",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('Intrepid-None-LI700.pdf')
+plot(ILI700.LL, main="Intrepid-None-LI700",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-Tilt-LI700.pdf')
+plot(TLI700.LL, main="None-Tilt-LI700",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-Pristine-LI700.pdf')
+plot(PLI700.LL, main="None-Pristine-LI700",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-LS-LI700.pdf')
+plot(LSLI700.LL, main="None-Luna Sensation-LI700",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-Vangard-LI700.pdf')
+plot(VLI700.LL, main="None-Vangard-LI700",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+
+#pdf('Intrepid-None-NFP.pdf')
+plot(INFP.LL, main="Intrepid-None-NFP",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-Tilt-NFP.pdf')
+plot(TNFP.LL, main="None-Tilt-NFP", ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-Pristine-NFP.pdf')
+plot(PNFP.LL, main="None-Pristine-NFP",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-LS-NFP.pdf')
+plot(LSNFP.LL, main="None-Luna Sensation-NFP",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+#pdf('None-Vangard-NFP.pdf')
+plot(VNFP.LL, main="None-Vangard-NFP",ylim=c(0,1), xlab="Field Application Rate", ylab="% Mortality")
+#dev.off()
+```
+
+
+RATIO TESTS.................................
+
+```{r}
+# Models with Relationships
+#noEffect(DA.R1R2.LL) #(p value= 0.0000 relationship=y)
+#noEffect(S90.LL) #(p value=0.0000 relationship=y)
+#noEffect(LIB.LL) #(p value=0.0000 relationship=y)
+#noEffect(ADA.LL) #(p value=0.0000 relationship=Y)
+#noEffect(IDA.LL) #(p value=1.110223e-16 relationship=Y)
+#noEffect(TDA.LL) #(p value=1.853462e-11 relationship=Y)
+#noEffect(PDA.LL) #(p value=0.0000 relationship=Y)
+#noEffect(LSDA.LL) #(p value=0.0000 relationship=Y)
+#noEffect(ALI700.LL) #(p value=1.187152e-04 relationship=Y)
+#noEffect(ILI700.LL) #(p value=2.551352e-06 relationship=Y)
+#noEffect(VLI700.LL) #(p value=0.0000 relationship=Y)
+#noEffect(VNFP.LL) #(p value=0.02438679 relationship=Y)
+
+
+#Comparisons to make:
+# DA vs ADA
+# DA vs IDA
+# DA vs TDA
+# DA vs PDA
+# DA vs LSDA
+
+#Create glm for all:
+#DA
+idx.DA <- which(data$Insecticide=="none" & data$Fungicide=="none" & data$Adjuvant == "Dyne-Amic")
+data.subset.DA <- data[idx.DA,]
+DA.glm <- glm((Dead / Treated) ~ log10(Dose),data = data.subset.DA[!(data.subset.DA$Dose==0),],weights = Treated, family = binomial(link = "logit"))
+#ADA
+idx.ADA <- which(data$Insecticide=="Altacor" & data$Fungicide=="none" & data$Adjuvant == "Dyne-Amic")
+data.subset.ADA <- data[idx.ADA,]
+ADA.glm <- glm((Dead / Treated) ~ log10(Dose),data = data.subset.ADA[!(data.subset.ADA$Dose==0),],weights = Treated, family = binomial(link = "logit"))
+data.subset.ADA
+#IDA
+idx.IDA <- which(data$Insecticide=="Intrepid" & data$Fungicide=="none" & data$Adjuvant == "Dyne-Amic")
+data.subset.IDA <- data[idx.IDA,]
+IDA.glm <- glm((Dead / Treated) ~ log10(Dose),data = data.subset.IDA[!(data.subset.IDA$Dose==0),],weights = Treated, family = binomial(link = "logit"))
+#TDA
+idx.TDA <- which(data$Insecticide=="none" & data$Fungicide=="Tilt" & data$Adjuvant == "Dyne-Amic")
+data.subset.TDA <- data[idx.TDA,]
+TDA.glm <- glm((Dead / Treated) ~ log10(Dose),data = data.subset.TDA[!(data.subset.TDA$Dose==0),],weights = Treated, family = binomial(link = "logit"))
+#PDA
+idx.PDA <- which(data$Insecticide=="none" & data$Fungicide=="Pristine" & data$Adjuvant == "Dyne-Amic")
+data.subset.PDA <- data[idx.PDA,]
+PDA.glm <- glm((Dead / Treated) ~ log10(Dose),data = data.subset.PDA[!(data.subset.PDA$Dose==0),],weights = Treated, family = binomial(link = "logit"))
+#LSDA
+idx.LSDA <- which(data$Insecticide=="none" & data$Fungicide=="LunaSensation" & data$Adjuvant == "Dyne-Amic")
+data.subset.LSDA <- data[idx.LSDA,]
+LSDA.glm <- glm((Dead / Treated) ~ log10(Dose),data = data.subset.LSDA[!(data.subset.LSDA$Dose==0),],weights = Treated, family = binomial(link = "logit"))
+```
+
+```{r}
+#Ratio Tests (Can't do this yet bc don't know which ones have relationships (likely a lot of them)) So this all still needs to be edited
+
+#DA vs ADA
+#Create vector to determine LC for 50 and 90 (not just 50)
+ratios<- c(20,50)
+ratios.DAvADA <- ratio_test(model_1 = DA.glm, model_2 = ADA.glm, percentage = 50,
+compare = "Dyne-Amic - Altacor+Dyne-Amic")
+# view ratio test results
+ratios.DAvADA
+#compare                   percentage  dose_1     dose_2    se    test_stat   p_value
+#Dyne-Amic - Altacor+Dyne-Amic	50	21.73298	17.05989	0.02343096	4.487355	7.211278e-06
+#LC50 ratio pvalue:7.211278e-06
+
+# DA vs IDA
+ratios.DAvIDA <- ratio_test(model_1 = DA.glm, model_2 = IDA.glm, percentage = 50,
+compare = "Dyne-Amic - Intrepid+Dyne-Amic")
+# view ratio test results
+ratios.DAvIDA
+#compare                    percentage  dose_1     dose_2    se    test_stat   p_value
+#Dyne-Amic - Intrepid+Dyne-Amic	50	21.73298	22.19964	0.02773195	0.3327072	0.7393553
+#LC50 ratio pvalue:0.7393553 (no sig difference in LC50 value)
+
+#DA vs TDA
+ratios.DAvTDA <- ratio_test(model_1 = DA.glm, model_2 = TDA.glm, percentage = 50,
+compare = "Dyne-Amic - Tilt+Dyne-Amic")
+# view ratio test results
+ratios.DAvTDA
+#compare                percentage  dose_1     dose_2    se    test_stat   p_value
+#Dyne-Amic - Tilt+Dyne-Amic	50	21.73298	115.4268	0.09563568	7.582812	3.381441e-14
+#LC50 ratio pvalue:3.381441e-14 (no sig difference in LC50 value)
+
+# DA vs PDA
+ratios.DAvPDA <- ratio_test(model_1 = DA.glm, model_2 = PDA.glm, percentage = 50,
+compare = "Dyne-Amic - Pristine+Dyne-Amic")
+# view ratio test results
+ratios.DAvPDA
+#compare                   percentage  dose_1     dose_2    se    test_stat   p_value
+#Dyne-Amic - Pristine+Dyne-Amic	50	21.73298	12.92407	0.02296508	9.828828	8.459739e-23
+#LC50 ratio pvalue:8.459739e-23 (no sig difference in LC50 value)
+
+# DA vs LSDA
+ratios.DAvLSDA <- ratio_test(model_1 = DA.glm, model_2 = LSDA.glm, percentage = 50,
+compare = "Dyne-Amic - LunaSensation+Dyne-Amic")
+# view ratio test results
+ratios.DAvLSDA
+#compare                         percentage  dose_1     dose_2    se    test_stat   p_value
+#Dyne-Amic - LunaSensation+Dyne-Amic	50	21.73298	17.16515	0.02580869	3.970433	7.174214e-05
+#LC50 ratio pvalue:7.174214e-05 (no sig difference in LC50 value)
+
+
+
+#Results
+# Comparison         ratio         pvalue                 Conclusion
+# DA vs ADA        1.273923      7.211278e-06     (sig difference in LC50 value) 
+# DA vs IDA        0.978979      0.7393553        (no sig difference in LC50 value)
+# DA vs TDA        0.1882836     3.381441e-14     (sig difference in LC50 value)
+# DA vs PDA        1.681589      8.459739e-23     (sig difference in LC50 value)
+# DA vs LSDA       1.266111      7.174214e-05     (sig difference in LC50 value)
+
+
+LCratio.DAvADA <-ratios.DAvADA$dose_1/ratios.DAvADA$dose_2
+LCratio.DAvIDA <-ratios.DAvIDA$dose_1/ratios.DAvIDA$dose_2
+LCratio.DAvTDA <-ratios.DAvTDA$dose_1/ratios.DAvTDA$dose_2
+LCratio.DAvPDA <-ratios.DAvPDA$dose_1/ratios.DAvPDA$dose_2
+LCratio.DAvLSDA <-ratios.DAvLSDA$dose_1/ratios.DAvLSDA$dose_2
+
+LCratio.DAvADA 
+LCratio.DAvIDA 
+LCratio.DAvTDA 
+LCratio.DAvPDA
+LCratio.DAvLSDA
+
+ratios.DAvADA$p_value
+ratios.DAvIDA$p_value
+ratios.DAvTDA$p_value
+ratios.DAvPDA$p_value
+ratios.DAvLSDA$p_value
+
+ratios.DAvADA$dose_1
+ratios.DAvIDA$dose_1
+ratios.DAvTDA$dose_1
+ratios.DAvPDA$dose_1
+ratios.DAvLSDA$dose_1
+
+ratios.DAvADA$dose_2
+ratios.DAvIDA$dose_2
+ratios.DAvTDA$dose_2
+ratios.DAvPDA$dose_2
+ratios.DAvLSDA$dose_2
+
+```
+
+```{r}
+#Plot to check
+#plot
+
+#Dyne-Amic
+#pdf('test.ggplots.pdf')
+DA.plot <- ggplot(data = data.subset.DA[!(data.subset.DA$Dose==0),],
+aes(x = log10(Dose), y = (Dead / Treated))) + 
+geom_point() + ylim(0,1)+ ylab("Percent Mortality (%)")+ xlab("Log10(Field Application Rate)")+ggtitle("Dyne-Amic")+
+geom_smooth(method = "glm",
+method.args = list(family = binomial(link = "logit")),
+aes(weight = Treated), colour = "#FF0000", se = TRUE)
+DA.plot + theme_bw() +theme(axis.ticks = element_line(colour="black",size=1))+theme(axis.ticks.length = unit(3, "mm"))+theme(axis.text = element_text(colour = "black", size=15), axis.title = element_text(colour = "black", size=15), panel.border = element_blank(),panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),panel.background = element_rect(colour = "black", size=1))
+#dev.off()
+
+#Pristine
+#pdf('P.ggplot.pdf')
+P.plot <- ggplot(data = data.subset.P[!(data.subset.P$Dose==0),],
+aes(x = log10(Dose), y = (Dead / Treated))) +
+geom_point() + ylim(0,1)+ ylab("Percent Mortality (%)")+ xlab("Log10(Field Application Rate)")+ggtitle("Pristine")+
+geom_smooth(method = "glm",
+method.args = list(family = binomial(link = "logit")),
+aes(weight = Treated), colour = "#FF0000", se = TRUE)
+P.plot  + theme_bw() +theme(axis.ticks = element_line(colour="black",size=1))+theme(axis.ticks.length = unit(3, "mm"))+theme(axis.text = element_text(colour = "black", size=15), axis.title = element_text(colour = "black", size=15), panel.border = element_blank(),panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),panel.background = element_rect(colour = "black", size=1))
+#dev.off()
+
+#Altacor
+#pdf('A.ggplot.pdf')
+A.plot <- ggplot(data = data.subset.A[!(data.subset.A$Dose==0),],
+aes(x = log10(Dose), y = (Dead / Treated))) +
+geom_point() + ylim(0,1)+ ylab("Percent Mortality (%)")+ xlab("Log10(Field Application Rate)")+ggtitle("Altacor")+
+geom_smooth(method = "glm",
+method.args = list(family = binomial(link = "logit")),
+aes(weight = Treated), colour = "#FF0000", se = TRUE)
+A.plot  + theme_bw() +theme(axis.ticks = element_line(colour="black",size=1))+theme(axis.ticks.length = unit(3, "mm"))+theme(axis.text = element_text(colour = "black", size=15), axis.title = element_text(colour = "black", size=15), panel.border = element_blank(),panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),panel.background = element_rect(colour = "black", size=1))
+#dev.off()
+
+#Vangard
+#pdf('V.ggplot.pdf')
+V.plot <- ggplot(data = data.subset.V[!(data.subset.V$Dose==0),],
+aes(x = log10(Dose), y = (Dead / Treated))) +
+geom_point() + ylim(0,1)+ ylab("Percent Mortality (%)")+ xlab("Log10(Field Application Rate)")+ggtitle("Vangard")+
+geom_smooth(method = "glm",
+method.args = list(family = binomial(link = "logit")),
+aes(weight = Treated), colour = "#FF0000", se = TRUE)
+V.plot + theme_bw() +theme(axis.ticks = element_line(colour="black",size=1))+theme(axis.ticks.length = unit(3, "mm"))+theme(axis.text = element_text(colour = "black", size=15), axis.title = element_text(colour = "black", size=15), panel.border = element_blank(),panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),panel.background = element_rect(colour = "black", size=1))
+#dev.off()
+
+#Vangard and NFP
+#pdf('VNFP.ggplot.pdf')
+VNFP.plot <- ggplot(data = data.subset.VNFP[!(data.subset.VNFP$Dose==0),],
+aes(x = log10(Dose), y = (Dead / Treated))) +
+geom_point() + ylim(0,1)+ ylab("Percent Mortality (%)")+ xlab("Log10(Field Application Rate)")+ggtitle("Vangard+Nu Film P")+
+geom_smooth(method = "glm",
+method.args = list(family = binomial(link = "logit")),
+aes(weight = Treated), colour = "#FF0000", se = TRUE)
+VNFP.plot  + theme_bw() +theme(axis.ticks = element_line(colour="black",size=1))+theme(axis.ticks.length = unit(3, "mm"))+theme(axis.text = element_text(colour = "black", size=15), axis.title = element_text(colour = "black", size=15), panel.border = element_blank(),panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),panel.background = element_rect(colour = "black", size=1))
+#dev.off()
+
+#LI 700
+#pdf('LI700.ggplot.pdf')
+LI700.plot <- ggplot(data = data.subset.LI700[!(data.subset.LI700$Dose==0),],
+aes(x = log10(Dose), y = (Dead / Treated))) +
+geom_point() + ylim(0,1)+ ylab("Percent Mortality (%)")+ xlab("Log10(Field Application Rate)")+ggtitle("LI 700")+
+geom_smooth(method = "glm",
+method.args = list(family = binomial(link = "logit")),
+aes(weight = Treated), colour = "#FF0000", se = TRUE)
+LI700.plot  + theme_bw() +theme(axis.ticks = element_line(colour="black",size=1))+theme(axis.ticks.length = unit(3, "mm"))+theme(axis.text = element_text(colour = "black", size=15), axis.title = element_text(colour = "black", size=15), panel.border = element_blank(),panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),panel.background = element_rect(colour = "black", size=1))
+#dev.off()
+
+#NFP
+#pdf('NFP.ggplot.pdf')
+NFP.plot <- ggplot(data = data.subset.NFP[!(data.subset.NFP$Dose==0),],
+aes(x = log10(Dose), y = (Dead / Treated))) +
+geom_point() + ylim(0,1)+ ylab("Percent Mortality (%)")+ xlab("Log10(Field Application Rate)")+ggtitle("Nu Film P")+
+geom_smooth(method = "glm",
+method.args = list(family = binomial(link = "logit")),
+aes(weight = Treated), colour = "#FF0000", se = TRUE)
+NFP.plot  + theme_bw() +theme(axis.ticks = element_line(colour="black",size=1))+theme(axis.ticks.length = unit(3, "mm"))+theme(axis.text = element_text(colour = "black", size=15), axis.title = element_text(colour = "black", size=15), panel.border = element_blank(),panel.grid.major = element_blank(),panel.grid.minor = element_blank(), axis.line = element_line(colour = "black"),panel.background = element_rect(colour = "black", size=1))
+#dev.off()
+
+```
+
